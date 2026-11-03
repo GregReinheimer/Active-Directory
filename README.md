@@ -34,9 +34,10 @@ The project focuses on Active Directory administration, Group Policy management,
 
 ## Project Sections
 
-1. **Active Directory Setup:** Domain controller configuration and verification, organizational units, users, and groups structure.
-2. **Helpdesk Delegation:** Password reset permissions and least privilege administration.
-3. **Group Policy Management:** Workstation security and department restrictions.
-4. **File Sharing and Network Map Drive:** Creation of department shares with access controlled through security groups.
-5. **IT Helpdesk Tickets:** Simulated end user support incidents and resolutions.
+1. **Active Directory Setup:** Domain controller configuration and verification.
+2. **Orgnaizational Units, Users and Groups**: Department structure and account management.
+3. **Helpdesk Delegation:** Password reset permissions and least privilege administration.
+4. **Group Policy Management:** Workstation security and department restrictions.
+5. **File Sharing and Network Map Drive:** Creation of department shares with access controlled through security groups.
+6. **IT Helpdesk Tickets:** Simulated end user support incidents and resolutions.
 
