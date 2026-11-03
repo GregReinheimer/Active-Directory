@@ -17,7 +17,7 @@ Deploy and configure a Windows Server 2022 domain controller in a virtual lab en
 | Server Roles | Active Directory Domain Services (AD DS), DNS, DHCP |
 | Administrative Tools | Server Manager, Active Directory Users and Computers (ADUC), DNS Manager, DHCP Manager, Powershell |
 
-DIAGRAM
+![Active Directory Network Diagram](Screenshots/Active%20Directory%20Network%20Diagram.jpg) 
 
 ## ***Steps Performed***
 
