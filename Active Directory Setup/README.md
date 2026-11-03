@@ -17,115 +17,63 @@ Deploy and configure a Windows Server 2022 domain controller in a virtual lab en
 | Server Roles | Active Directory Domain Services (AD DS), DNS, DHCP |
 | Administrative Tools | Server Manager, Active Directory Users and Computers (ADUC), DNS Manager, DHCP Manager, Powershell |
 
+DIAGRAM
+
 ## ***Steps Performed***
 
-### Part 1: Gather Basic System Information
+### Part 1: Prepare Windows Server 2022
 
-#### Step 1.1: Open Task Manager, add the command line column, and identify a core process in the properties window
+#### Step 1.1: Rename the server and configure networking
 
-   >**Note**: From the Task Manager, you can review all the application, processes, and services that are active at the           moment. You can even attempt to shut down specific processes, if necessary.
-   
-From the workstation desktop, **right click** anywhere on the taskbar, then select **Task Manager** from the context menu to open the Task Manager. In the Task Manager, **right click** the **Name Column header**, then **select Command line** from the context menu to add the Command line column. **Identify** one of the core Windows processes listed above, then **right click** the process and **select properties** from the context menu to display additional information about the process in the Properties window. Then close the properties window.
+Open the Server Manager, select **Local Server**. Change the computer name to **DC01**. Restart the server. To set up proper network configuration, open the internal network adapter's IPv4 properties. Assign `192.168.13.1`, assign subnet mask `255.255.255.0`. Leave the gateway blank. Set DNS to `192.168.13.1`. Verify the VirtualBox NAT is configured separately.
 
-  ![Screenshot](Screenshots/A1.png)
+#### Step 1.2: Verify Network
+Open Powershell and **type** `hostname` and `ipconfig /all` to verify hostname of server and all ip configuration (ip address, subnet mask, gateway, and DNS).
 
-   >**Note**: By adding the Command line column, you can observe the file path for each process's executable file, as well as       any command line options that were used to launch the program. For forensic investigators it can be a valuable source of  detailed information when attempting to analyze and isolate malware that has been running since the start of the system.
+PICTURE
+
+ SAMPLE  >**Note**: By adding the Command line column, you can observe the file path for each process's executable file, as well as       any command line options that were used to launch the program. For forensic investigators it can be a valuable source of  detailed information when attempting to analyze and isolate malware that has been running since the start of the system.
+ 
+---
+### Part 2: Install Active Directory
+---
+
+#### Step 2.1: Install Active Directory Domain Services (AD DS) 
+
+In Server Manager, Select **Manage** --> choose **Roles and Features** from the list. Select **Role Based or feature based installation**. Select **DC01** --> choose **Active Directory Domain Services** from the list. Add any required features. Select **install**.
+
+ PICTURE
 
 ---
-#### Step 1.2: Check network activity by viewing the performance tab, resource monitor, and the listening ports on the network tab
+#### Step 2.2: Promote the Domain Controller
 
-In the Task Manager, **click** the **Performance tab** to display information about resource usage. From the bottom of the Task Manager, **click** the **Open Resource Monitor link** to launch the Resource Monitor. In the Resource Monitor, **click** the **Network tab** to display a list of processes that are currently generating network activity. On the Network tab, **expand** the **Listening Ports header** to display a list of ports that are actively listening and the processes that are using them. Close the **Resource Monitor** and **Task Manager windows**.
-
-  ![Screenshot](Screenshots/A2.png)
-
-  >**Note**: The Resource Monitor is a dedicated utility for monitoring system resource usage in real time, including CPU, memory usage, disk utilization, and network use. When the Resource Monitor contains many of the same metrics as the         Performance Tab, it allows knowledgeable users to drill deeper into the underlying data.
-
- >**Note**: The Network tab displays network activity, TCP connections, and listening ports for any running process. As a         forensic investigator, this information can be essential to identifying spyware, botnets, and other forms of malware that   require network connectivity.
-
----
-#### Step 1.3: Gather NTS drive information
-
-Open the **Command Prompt** and type `fsutil fsinfo ntfsinfo c:` and **press enter** to display information about the c: drive.
-
-   ![Screenshot](Screenshots/A3.png)
-  
-   >**Note**: The output of this command provides information about the c: drive, inlcuding the NTFS volume serial number,       version, number of total clusters, number of free clusters, total number of sectors, and more. In forensic investigations, this information can be used to determine if there is hidden data in a boot file or boot record of the drive. Also it can be used to determine if there are fake bad clusters, which are areas of the drive that the file system ignores due to damage, but are in fact viable and used to hide data.
-
----
-#### Step 1.4: Review the usn journal
-
-At the command prompt, type `fsutil usn queryjournal c:` and **press enter** to display information related to the update sequence number changes journal. Then, type `fsutil usn readjournal c:` and **press enter** to display all records in the usn journal.
->After allowing the command to run for about 10 seconds, **press ctrl+c** to terminate it.
-
-   ![Screenshot](Screenshots/A4.png)
-
-  >**Note**: This information can be useful for several reasons. First, when a program is run, typically you will be able to       see the modified prefetch files, which will give you a timestamp for execution. Second, the usn journal can provide         evidence of deleted files. Third, you can see file modifications and creation of specific particular file extensions, such as executbale, which in some contexts can be indicative of a system compromise. Many compromises occur after a piece of file-based malware is initially run, like from a macro or PDF. The usn journal can provide a timeline of           initial infection.
-
----
-#### Step 1.5: Generate a new usn record
-
-On the desktop, **right click** on empty space and **select New → Text Document** to create an empty text file on the desktop. In the filename field, type `yourname` where your name is your own name, and **press enter** to name the new file. At the command prompt, type `cd desktop` and **press enter** to change the current directory to the desktop. Then type `fsutil usn readjournal c: csv > usn.log` and **press enter** to save the contents of the usn journal to the workstation desktop as a .csv file. **Select** the **usn.log file** to open it in Notepad. In the notepad window, **scroll down** to the bottom of the file and **locate** the record referencing the **yourname.txt file**. **Highlight** the **File ID value** for the yourname.txt file, then **press ctrl+c** to copy it to the clipboard.
-At the command prompt, type `fsutil file queryFileNameById c:\ 0xFile ID`, where File ID is the value you copied from the previous command output (paste), then **press enter** to retrieve the file path associated with the file ID.
->The file ID should be the long hexadecimal number directly to the right of the word "Archive".
-
-![Screenshot](Screenshots/A5.png)
+Click the Server Manager notification flag. Select **Promote this server to a domain controller**. Choose **add a new forest**. Enter `ad.cranburypark.test`.
   
 ---
-### Part 2: Explore the Registry
----
+#### Step 2.3: Verify Domain Controller Options
 
-  >**Note**: The Windows Registry is one of the key components of the Windows OS. This database contains Windows settings, application settings, device driver info, and user passwords. When an application is installed in a Windows environment, some part of the software is stored in the Registry. Registry analysis is often a critical component of conducting forensics investigations on Windows systems.
-
----
-#### Step 2.1: Open the registry editor to locate the current version key
-
-From the taskbar, **click** the **start icon** and type `regedit` and **press enter** to search for and launch the Registry Editor. Navigate to the following key: `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WindowsNT\CurrentVersion`
-
->This key contains multiple data points that could be very useful to an investigator who has obtained a drive image  as evidence, but doesn't know the exact version of Windows that was installed on it. If the drive image was taken from a recent compromised system, this information could help corroborate evidence of an exploit.
+Check the Forest and Domain functional levels are set to Windows Server 2022. Enable the **DNS Server** and **Global Catalog**. Leave **RODC** disabled. Set a secure DSRM password.
 
 ---
-#### Step 2.2: Review the installation details and convert the timestamp to human readable format
+#### Step 2.4: Finish Promotion
 
-In the right pane, **select** the **InstallDate value** to open the Edit DWORD Value Box (32 bit). In the dialog box, **right click** the **Value data field**, then **select copy** from the context menu to copy the hex value to the clipboard. Then close the box. **Select Chrome icon**, to open a new Chrome browser window. In the navigation bar, type `epochconverter.com/hex` and **press enter** to navigate to the hexadecimal converter. In the hexadecimal converter, **delete** the existing timestamp value, then **right click** the empty hex field and **select paste** from the context menu to paste the hex value into the converter. **Click** to perform the conversion. Close the browser.
+Review the DNS warnings and confirm the NetBios name. Keep default database, log, and SYSVOL locations. Complete the prequisites check. Install and restart the server.
 
-  >**Note**: Value data in the Windows Registry is commonly stored in the hexadecimal notation.
-
-  ![Screenshot](Screenshots/A6.png)
-
-  ---
-#### Step 2.3 : Collect the required registry keys for the network interfaces and the windows login function.
-Note: Although these keys show the general idea of what they are, they may not be exact based on the version of the OS.
-
-In the Registry Editor, navigate to the following keys:
-
-  -  `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\{39007...}`
-
->This key contains information about the default network interfaces for the workstation, including IP address and default gateway.
-
-   ![Screenshot](Screenshots/A7.png)
-
-  -  `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WindowsNT\CurrentVersion\Winlogin`
-
->Winlogon is a common target for several threats that could modify its function and memory usage. Signs of increased memory usage for this process might indicate that it has been compromised.
-
- ![Screenshot](Screenshots/A8.png)
-  
 ---
-#### Step 2.4: Collect the required registry keys related to the current user account: Shell Bags and RecentDocs
+### Part 3: Verify Active Directory
+---
 
-In the Registry Editor, naviaget to the following keys:
+#### Step 3.1: Verify ADUC and DNS
 
-  -  `HKEY_CURRENT_USER\Software\Microsoft\Windows\Shell\Bags`
+On the **Server Manager --> Tools --> Active Directory Users and Computers** confirm `ad.cranburypark.test` exists. Then inspect the default Users and Computers containers. 
 
->The information in Shell Bags can be vital to providing non-repudiation of claims that a defendant was not aware of a particular folder on their computer.
+>**Note** Leave the built-in system containers and objects intact.
 
-![Screenshot](Screenshots/A9.png)
-    
-  -  `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs`
-    
->Within this key you can see hexadecimal records for the last 10 files that the current user accessed through the File Explorer.
+Open **DNS Manager** and confirm the `ad.cranburypark.test` forward lookup zone.
 
-![Screenshot](Screenshots/A10.png)
+#### Step 3.2: Run Health Checks
+
+Check the domain, DNS zone, and domain controller health using `dcdialog`, `Get-ADDomain`, and `Get-ADForest`. Record any warnings and errors.
 
 ---
 
@@ -137,12 +85,12 @@ In the Registry Editor, naviaget to the following keys:
   
 
 ---
-## Troubleshooting Logic
+## Troubleshooting Logic??
 
 | Symptoms | Potential Causes | Possible Resolution |
 |---|---|---|
-| applications fail to start, login issues, broken user files | malware tampering, improper software removal, registry corruption | compare keys against known good baselines, restore from registry backup, reinstall affected apps |
-| files appearing/disappearing without user action, suspicious extensions | malware execution, automated scripts, unathorized activity| review usn journal entries for timestamps and file IDs, use fsutil to locate file paths |
-| system lag, high CPU or memory usage in Task Manager | background services stuck, malware processing, runaway processes| check command line for suspicious execution, disable services |
+|  |  |  |
+|  | |  |
+|  | |  |
 
 
